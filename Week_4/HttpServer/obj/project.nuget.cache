@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "gINyH/tWh7PuyG4iBW1u7L0pOFVaHIyXYNUeRcIwKuwEvZgkROftx019XdF5kQyp+sBMwZ/WrV1gTiTzCjDm3Q==",
+  "dgSpecHash": "xYfYktOAWzC1ymiNX1+wPkPCUcCTvmJ9PAqzQwv7/EXjFbPCTLHX3qIb4c2I09cVv/Sso5sZHn1L5xUBIeWYRw==",
   "success": true,
-  "projectFilePath": "/Users/user/Documents/ITIS/Info/ORIS/HttpServer/HttpServer/HttpServer.csproj",
+  "projectFilePath": "/Users/user/Documents/ITIS/Info/ORIS/Week_4/HttpServer/HttpServer.csproj",
   "expectedPackageFiles": [],
   "logs": []
 }
