@@ -1,0 +1,54 @@
+@media screen and (max-width: 700px) {
+    body {
+        overflow-x: hidden;
+    }
+
+    main {
+        background: radial-gradient(rgba(24, 26, 33, 0) 0%, #181A21 100%) fixed no-repeat, url('https://store.cloudflare.steamstatic.com/public/shared/images/joinsteam/new_login_bg_strong_mask_mobile.jpg') center top no-repeat, #181A21;
+    }
+
+    .login_container {
+        padding-top: 78px;
+        padding-bottom: 0;
+    }
+
+    .login_content {
+        align-items: center;
+    }
+
+    .login_block {
+        background: none;
+        min-width: 0;
+    }
+
+    .login_block_content {
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .login_beta {
+
+        margin: 0 auto;
+    }
+
+    .lb_content {
+        align-items: center;
+        text-align: center;
+    }
+
+    .login_bottom {
+        flex-direction: column;
+    }
+
+    .lb_qr svg {
+        display: none;
+    }
+
+    .login_bottom_more {
+        order: 2;
+    }
+
+    .login_bottom_join {
+        order: -1;
+    }
+}
