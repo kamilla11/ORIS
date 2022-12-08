@@ -72,7 +72,7 @@ namespace HttpServer
                 var responseProvider = new ResponseProvider(_httpContext);
 
                 if (!responseProvider.FilesHandler(_serverSettings, out buffer) &&
-                    !MethodHandler(_httpContext, out buffer))
+                    !responseProvider.MethodHandler(out buffer))
                 {
                     buffer = responseProvider.NotFound();
                 }
@@ -94,117 +94,6 @@ namespace HttpServer
             Console.WriteLine("Сервер завершил работу.");
         }
 
-        private bool MethodHandler(HttpListenerContext _httpContext, out byte[] buffer)
-        {
-            bool isSaveAccountMethod = false;
-            buffer = null;
-            // объект запроса
-            HttpListenerRequest request = _httpContext.Request;
 
-            // объект ответа
-            HttpListenerResponse response = _httpContext.Response;
-
-            if (_httpContext.Request.Url.Segments.Length < 2) return false;
-
-            string controllerName = _httpContext.Request.Url.Segments[1].Replace("/", "");
-            string methodName = _httpContext.Request.Url.Segments[2].Replace("/", "");
-
-            string[] strParams = { };
-            object[] queryParams = { };
-
-            Type controller;
-            if (!TryGetController(out controller, controllerName)) return false;
-
-            MethodInfo method;
-            if (!TryGetMethod(out method, controller, methodName, _httpContext, out queryParams)) return false;
-
-
-            if (_httpContext.Request.Url.Segments.Length > 3 && queryParams.Length == 0)
-            {
-                strParams = _httpContext.Request.Url
-                    .Segments
-                    .Skip(3)
-                    .Select(s => s.Replace("/", ""))
-                    .ToArray();
-
-                queryParams = method.GetParameters()
-                    .Select((p, i) => Convert.ChangeType(strParams[i], p.ParameterType))
-                    .ToArray();
-            }
-
-            var ret = method.Invoke(Activator.CreateInstance(controller), queryParams);
-
-            response.ContentType = "Application/json";
-
-            buffer = Encoding.ASCII.GetBytes(JsonSerializer.Serialize(ret));
-            response.ContentLength64 = buffer.Length;
-            if (method.Name == "saveAccount")
-            {
-                _httpContext.Response.Redirect("https://store.steampowered.com/login/");
-            }
-
-            return true;
-        }
-
-        public bool TryGetController(out Type controller, string controllerName)
-        {
-            var assembly = Assembly.GetExecutingAssembly();
-            controller = assembly.GetTypes()
-                .FirstOrDefault(c => Attribute.IsDefined(c, typeof(HttpController)) &&
-                                     (((HttpController)c.GetCustomAttribute(typeof(HttpController))).ControllerName ==
-                                      controllerName.ToLower() ||
-                                      c.Name.ToLower() == controllerName.ToLower()));
-            if (controller is null)
-                return false;
-            return true;
-        }
-
-        public bool TryGetMethod(out MethodInfo method, Type controller, string methodName,
-            HttpListenerContext _httpContext, out object[] queryParams)
-        {
-            var methodType = $"Http{_httpContext.Request.HttpMethod}";
-            queryParams = new object[] { };
-            switch (methodType)
-            {
-                case "HttpGET":
-                    method = controller.GetMethods()
-                        .FirstOrDefault(c => Attribute.IsDefined(c, typeof(HttpGET)) &&
-                                             (((HttpGET)c.GetCustomAttribute(typeof(HttpGET))).MethodURI ==
-                                              methodName.ToLower() ||
-                                              c.Name.ToLower() == methodName.ToLower()));
-                    break;
-                case "HttpPOST":
-                    method = controller.GetMethods()
-                        .FirstOrDefault(c => Attribute.IsDefined(c, typeof(HttpPOST)) &&
-                                             (((HttpPOST)c.GetCustomAttribute(typeof(HttpPOST))).MethodURI ==
-                                              methodName.ToLower() ||
-                                              c.Name.ToLower() == methodName.ToLower()));
-                    queryParams = new[] { GetPostData(_httpContext.Request) };
-                    break;
-                default:
-                    method = null;
-                    break;
-            }
-
-            if (method is null)
-                return false;
-            return true;
-        }
-
-        private static string GetPostData(HttpListenerRequest request)
-        {
-            if (!request.HasEntityBody)
-            {
-                return null;
-            }
-
-            using (Stream body = request.InputStream)
-            {
-                using (var reader = new StreamReader(body, request.ContentEncoding))
-                {
-                    return reader.ReadToEnd();
-                }
-            }
-        }
     }
 }

@@ -41,9 +41,10 @@ public class AccountDAO
         return new Database(_connectionStr).Update<Account>(entity);
     }
 
-    public bool VerifyLoginAndPassword(string login, string password)
+    public (bool, int?) VerifyLoginAndPassword(string login, string password)
     {
         var account = accounts.Find(a => a.Login == login && a.Password == password);
-        return account is not null;
+        if (account is not null) return (true, account.Id);
+        return (false, null);
     }
 }

@@ -48,12 +48,12 @@ internal class AccountsController
     }
 
     [HttpPOST("accounts/saveAccount")]
-    public string saveAccount(string query)
+    public string saveAccount(string login, string password)
     {
-        var queryParams = query.Split('&')
-            .SelectMany(pair => pair.Split('='))
-            .ToArray();
-        var res = _accountDao.InsertAccount(new Account() { Login = queryParams[1], Password = queryParams[3] });
+        // var queryParams = query.Split('&')
+        //     .SelectMany(pair => pair.Split('='))
+        //     .ToArray();
+        var res = _accountDao.InsertAccount(new Account() { Login = login, Password = password });
         if (res == 0)
         {
             Console.WriteLine("Error while saving data");
@@ -65,9 +65,9 @@ internal class AccountsController
     }
     
     [HttpPOST("accounts/login")]
-    public bool login(string login, string password)
+    public (bool,int?) login(string login, string password, string remember)
     {
-        var res = _accountDao.VerifyLoginAndPassword(login, password);
-        return res;
+        return _accountDao.VerifyLoginAndPassword(login, password);
+        
     }
 }
