@@ -71,12 +71,20 @@ namespace HttpServer
                 byte[] buffer;
                 var responseProvider = new ResponseProvider(_httpContext);
 
-                if (!responseProvider.FilesHandler(_serverSettings, out buffer) &&
-                    !responseProvider.MethodHandler(out buffer))
+                try
                 {
-                    buffer = responseProvider.NotFound();
+                    if (!responseProvider.FilesHandler(_serverSettings, out buffer) &&
+                        !responseProvider.MethodHandler(out buffer))
+                    {
+                        buffer = responseProvider.NotFound();
+                    }
                 }
-
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    buffer = Encoding.ASCII.GetBytes("Unexpected error");
+                }
+                
                 response.ContentLength64 = buffer.Length;
 
                 Stream output = response.OutputStream;

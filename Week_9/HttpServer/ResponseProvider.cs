@@ -103,20 +103,48 @@ public class ResponseProvider
                 .ToArray();
         }
 
-        if (method.Name == "getAccounts")
+        switch (method.Name)
         {
-            var existCookie = request.Cookies["SessionId"];
-            var isCookieExist = existCookie is not null && Regex.IsMatch(existCookie.Value, "IsAuthorize: true");
-            if (!isCookieExist)
+            case "getAccounts":
             {
-                response.StatusCode = 401;
-                response.ContentType = "text/plain";
-                buffer = Encoding.ASCII.GetBytes("User is not authorized");
-                response.ContentLength64 = buffer.Length;
-                return true;
-            }
-        }
+                var existCookie = request.Cookies["SessionId"];
+                var isCookieExist = existCookie is not null && Regex.IsMatch(existCookie.Value, "IsAuthorize=true");
+                if (!isCookieExist)
+                {
+                    response.StatusCode = 401;
+                    response.ContentType = "text/plain";
+                    buffer = Encoding.ASCII.GetBytes("User is not authorized");
+                    response.ContentLength64 = buffer.Length;
+                    return true;
+                }
 
+                break;
+            }
+            case "getAccountInfo":
+            {
+                if (queryParams.Length != 1) return false;
+                var existCookie = request.Cookies["SessionId"];
+                var isCookieExist = existCookie is not null && existCookie.Value == $"{{IsAuthorize=true Id={queryParams[0]}}}";
+                if (!isCookieExist)
+                {
+                    response.StatusCode = 401;
+                    response.ContentType = "text/plain";
+                    buffer = Encoding.ASCII.GetBytes("User is not authorized");
+                    response.ContentLength64 = buffer.Length;
+                    return true;
+                }
+
+                break; 
+            }
+
+            case "getAccountById":
+            {
+                if (queryParams.Length != 1) return false;
+                break;
+            }
+                
+        }
+        
         var ret = method.Invoke(Activator.CreateInstance(controller), queryParams);
 
         response.ContentType = "Application/json";
@@ -137,7 +165,7 @@ public class ResponseProvider
                 var res = ((bool, int?))ret;
                 if (res.Item1)
                 {
-                    response.SetCookie(new Cookie("SessionId", $"{{IsAuthorize: true, Id={res.Item2}}}"));
+                    response.SetCookie(new Cookie("SessionId", $"{{IsAuthorize=true Id={res.Item2}}}"));
                     buffer = Encoding.ASCII.GetBytes(
                         JsonSerializer.Serialize(new AccountDAO(_connectionStr).GetAccountById(res.Item2.Value)));
                     response.ContentLength64 = buffer.Length;

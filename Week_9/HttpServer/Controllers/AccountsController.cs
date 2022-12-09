@@ -47,6 +47,18 @@ internal class AccountsController
             account.Password);
     }
 
+    [HttpGET("accounts/getAccountInfo")]
+    public string getAccountInfo(int userId)
+    {
+        var account = _accountDao.GetAccountById(userId);
+
+        if (account == null) return "User not found";
+        return string.Format("User with id = {0}, login =  {1}, password = {2}",
+            account.Id.ToString(),
+            account.Login,
+            account.Password);
+    }
+    
     [HttpPOST("accounts/saveAccount")]
     public string saveAccount(string login, string password)
     {
