@@ -2,6 +2,7 @@ using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using HttpServer.Attributes;
 using HttpServer.MyORM;
 
@@ -102,28 +103,49 @@ public class ResponseProvider
                 .ToArray();
         }
 
+        if (method.Name == "getAccounts")
+        {
+            var existCookie = request.Cookies["SessionId"];
+            var isCookieExist = existCookie is not null && Regex.IsMatch(existCookie.Value, "IsAuthorize: true");
+            if (!isCookieExist)
+            {
+                response.StatusCode = 401;
+                response.ContentType = "text/plain";
+                buffer = Encoding.ASCII.GetBytes("User is not authorized");
+                response.ContentLength64 = buffer.Length;
+                return true;
+            }
+        }
+
         var ret = method.Invoke(Activator.CreateInstance(controller), queryParams);
 
         response.ContentType = "Application/json";
-
         buffer = Encoding.ASCII.GetBytes(JsonSerializer.Serialize(ret));
         response.ContentLength64 = buffer.Length;
-        if (method.Name == "saveAccount")
+
+        switch (method.Name)
         {
-            response.Redirect("https://store.steampowered.com/login/");
-        }
-        
-        else if (method.Name == "login")
-        {
-            var res = ((bool, int?))ret;
-            if (res.Item1)
+            case "saveAccount":
             {
-                response.SetCookie(new Cookie("SessionId",  $"{{IsAuthorize: true, Id={res.Item2}}}"));
-                buffer = Encoding.ASCII.GetBytes(JsonSerializer.Serialize(new AccountDAO(_connectionStr).GetAccountById(res.Item2.Value)));
-                response.ContentLength64 = buffer.Length;
-                response.ContentType = "Application/json";
+                response.Redirect("https://store.steampowered.com/login/");
+
+                break;
             }
-            
+
+            case "login":
+            {
+                var res = ((bool, int?))ret;
+                if (res.Item1)
+                {
+                    response.SetCookie(new Cookie("SessionId", $"{{IsAuthorize: true, Id={res.Item2}}}"));
+                    buffer = Encoding.ASCII.GetBytes(
+                        JsonSerializer.Serialize(new AccountDAO(_connectionStr).GetAccountById(res.Item2.Value)));
+                    response.ContentLength64 = buffer.Length;
+                    response.ContentType = "Application/json";
+                }
+
+                break;
+            }
         }
 
         return true;
@@ -188,13 +210,13 @@ public class ResponseProvider
                 var query = reader.ReadToEnd();
                 var queryParams = query.Split('&')
                     .SelectMany(pair => pair.Split('='))
-                    .Where(((s, i) => i%2==1))
+                    .Where(((s, i) => i % 2 == 1))
                     .ToArray();
                 return queryParams;
             }
         }
     }
-    
+
     // private static string GetPostData(HttpListenerRequest request)
     // {
     //     if (!request.HasEntityBody)
