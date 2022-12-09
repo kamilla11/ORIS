@@ -2,7 +2,6 @@ using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using HttpServer.Attributes;
 using HttpServer.MyORM;
 
@@ -12,11 +11,14 @@ public class ResponseProvider
 {
     private HttpListenerContext _listenerContext;
     private static string _connectionStr = "Server=localhost;Database=postgres;Port=5432;SSLMode=Prefer";
-
+    private SessionManager _sessionManager;
+    private AccountDAO _accountDao;
 
     public ResponseProvider(HttpListenerContext listenerContext)
     {
         _listenerContext = listenerContext;
+        _sessionManager = SessionManager.Instance;
+        _accountDao = new(_connectionStr);
     }
 
     public bool FilesHandler(ServerSettings _serverSettings, out byte[] buffer)
@@ -107,9 +109,10 @@ public class ResponseProvider
         {
             case "getAccounts":
             {
-                var existCookie = request.Cookies["SessionId"];
-                var isCookieExist = existCookie is not null && Regex.IsMatch(existCookie.Value, "IsAuthorize=true");
-                if (!isCookieExist)
+                var cookie = request.Cookies["SessionId"];
+                var isCookieAndSessionExist =
+                    cookie is not null && _sessionManager.IsSessionExist(Guid.Parse(cookie.Value));
+                if (!isCookieAndSessionExist)
                 {
                     response.StatusCode = 401;
                     response.ContentType = "text/plain";
@@ -123,9 +126,10 @@ public class ResponseProvider
             case "getAccountInfo":
             {
                 if (queryParams.Length != 1) return false;
-                var existCookie = request.Cookies["SessionId"];
-                var isCookieExist = existCookie is not null && existCookie.Value == $"{{IsAuthorize=true Id={queryParams[0]}}}";
-                if (!isCookieExist)
+                var cookie = request.Cookies["SessionId"];
+                var isCookieAndSessionExist =
+                    cookie is not null && _sessionManager.IsSessionExist(Guid.Parse(cookie.Value));
+                if (!isCookieAndSessionExist)
                 {
                     response.StatusCode = 401;
                     response.ContentType = "text/plain";
@@ -134,7 +138,7 @@ public class ResponseProvider
                     return true;
                 }
 
-                break; 
+                break;
             }
 
             case "getAccountById":
@@ -142,14 +146,12 @@ public class ResponseProvider
                 if (queryParams.Length != 1) return false;
                 break;
             }
-                
         }
-        
+
         var ret = method.Invoke(Activator.CreateInstance(controller), queryParams);
 
         response.ContentType = "Application/json";
         buffer = Encoding.ASCII.GetBytes(JsonSerializer.Serialize(ret));
-        response.ContentLength64 = buffer.Length;
 
         switch (method.Name)
         {
@@ -165,17 +167,22 @@ public class ResponseProvider
                 var res = ((bool, int?))ret;
                 if (res.Item1)
                 {
-                    response.SetCookie(new Cookie("SessionId", $"{{IsAuthorize=true Id={res.Item2}}}"));
+                    var guid = _sessionManager.CreateSession(res.Item2!.Value,
+                        _accountDao.GetAccountById(res.Item2.Value).Login, DateTime.Now);
+                    response.SetCookie(new Cookie("SessionId", guid.ToString()));
                     buffer = Encoding.ASCII.GetBytes(
                         JsonSerializer.Serialize(new AccountDAO(_connectionStr).GetAccountById(res.Item2.Value)));
-                    response.ContentLength64 = buffer.Length;
-                    response.ContentType = "Application/json";
+                }
+                else
+                {
+                    return false;
                 }
 
                 break;
             }
         }
 
+        response.ContentLength64 = buffer.Length;
         return true;
     }
 

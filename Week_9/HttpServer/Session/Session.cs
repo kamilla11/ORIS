@@ -4,12 +4,12 @@ namespace HttpServer;
 
 public class Session
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
     public int AccountId { get; set; }
     public string Login { get; set; }
     public DateTime CreateDateTime { get; set; }
 
-    public Session(int id, int accountId, string login, DateTime createDateTime)
+    public Session(Guid id, int accountId, string login, DateTime createDateTime)
     {
         Id = id;
         AccountId = accountId;

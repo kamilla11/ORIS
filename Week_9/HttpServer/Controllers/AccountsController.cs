@@ -40,7 +40,7 @@ internal class AccountsController
     {
         var account = _accountDao.GetAccountById(userId);
 
-        if (account == null) return "User not found";
+        if (account is null) return "User not found";
         return string.Format("User with id = {0}, login =  {1}, password = {2}",
             account.Id.ToString(),
             account.Login,
@@ -52,19 +52,16 @@ internal class AccountsController
     {
         var account = _accountDao.GetAccountById(userId);
 
-        if (account == null) return "User not found";
+        if (account is null) return "User not found";
         return string.Format("User with id = {0}, login =  {1}, password = {2}",
             account.Id.ToString(),
             account.Login,
             account.Password);
     }
-    
+
     [HttpPOST("accounts/saveAccount")]
     public string saveAccount(string login, string password)
     {
-        // var queryParams = query.Split('&')
-        //     .SelectMany(pair => pair.Split('='))
-        //     .ToArray();
         var res = _accountDao.InsertAccount(new Account() { Login = login, Password = password });
         if (res == 0)
         {
@@ -75,11 +72,10 @@ internal class AccountsController
         Console.WriteLine("Data saved successfully");
         return "Data saved successfully";
     }
-    
+
     [HttpPOST("accounts/login")]
-    public (bool,int?) login(string login, string password, string remember)
+    public (bool, int?) login(string login, string password, string remember)
     {
         return _accountDao.VerifyLoginAndPassword(login, password);
-        
     }
 }

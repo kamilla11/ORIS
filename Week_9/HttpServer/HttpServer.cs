@@ -84,7 +84,7 @@ namespace HttpServer
                     Console.WriteLine(e);
                     buffer = Encoding.ASCII.GetBytes("Unexpected error");
                 }
-                
+
                 response.ContentLength64 = buffer.Length;
 
                 Stream output = response.OutputStream;
@@ -101,7 +101,5 @@ namespace HttpServer
             _httpListener.Stop();
             Console.WriteLine("Сервер завершил работу.");
         }
-
-
     }
 }
